@@ -244,6 +244,7 @@ class matrix():
                 total += self.matrixx[r][c]
         return total
 
+
     def printf(self):
         for i in self.matrixx:
             print(i)
@@ -254,6 +255,23 @@ class matrix():
     def zeroes(self):
         sub_ar = [0 for i in range(self.cols)]
         self.matrixx = [sub_ar for i in range(self.rows)]
+    def ones(self):
+        sub_ar = [ 1 for i in range(self.cols)]
+        self.matrixx = [sub_ar for i in range(self.rows)]
+
+def transpose(a_matrix):
+    if type(a_matrix) != matrix :
+        raise TypeError("Input must be a matrix")
+    matrix2 = matrix(a_matrix.cols , a_matrix.rows)
+    ar = []
+    for i in range( a_matrix.cols):
+        for j in range(a_matrix.rows):
+            ar.append(a_matrix.matrixx[j][i])
+        matrix2.matrixx.append(ar)
+        ar = []
+
+    return matrix2
+
 
 
 def matrix_mult(matrix1, matrix2):
@@ -311,12 +329,10 @@ def determinant_3d(a_matrix):
 def determinant(a_matrix, d=0, show_current_det=False):
     if type(a_matrix) != matrix or a_matrix.rows != a_matrix.cols:
         raise TypeError("Input must be square nxn matrix")
-
     if a_matrix.rows == 1:
         return 0
     if a_matrix.rows == 2:
         return a_matrix.matrixx[0][0] * a_matrix.matrixx[1][1] - a_matrix.matrixx[0][1] * a_matrix.matrixx[1][0]
-
     else:
         sub_array = []
         new_matrix = matrix(a_matrix.rows - 1, a_matrix.cols - 1)
@@ -491,7 +507,7 @@ def normalise_matrix(a_matrix):
     return normalised_matrix
 
 
-####check this one ######################################################
+
 def normalise_vector(a_vector):
     if type(a_vector) != vector:
         raise TypeError("Input must be a vector")
@@ -513,34 +529,7 @@ def raise_matrix_comps(a_matrix, power):
     return a_matrix
 
 
-###########finish code here
-##################################################
-# =============================================================================
-# def LU_decomp(a_matrix,L):
-#         assert check_for_symmetry(a_matrix) , "Matrix must be positive definite and symmetric"
-#         array = a_matrix.matrixx
-# # =============================================================================
-# #         L = matrix(a_matrix.rows,a_matrix.cols)
-# #         sub = [0 for i in range(L.cols)]
-# #         L.matrix = [sub for i in range(L.rows)]
-# # =============================================================================
-#         n = a_matrix.rows
-#
-#         for j in range(n):
-#             for i in range(j ,n ):
-#                 if i == j :
-#                     print("i is ",i)
-#                     raise_matrix_comps(L,2)
-#                     L.matrixx[i][j] = (array[i][j]-L.summ(i,i,0,j))**.5
-#                 else:
-#                     sumk = 0
-#                     for k in range(j):
-#                         sumk += L.matrixx[i][k] * L.matrixx[j][k]
-#                         L.matrixx[i][j] = (array[i][j]-sumk)/L.matrixx[j][j]
-#         return L
-#
-#
-# =============================================================================
+
 
 def cholesky(a_matrix):
     import numpy as np
@@ -559,19 +548,104 @@ def cholesky(a_matrix):
 
 
 
-
-def power_iter(a_matrix, steps=100):
+def power_iter(a_matrix, steps=10, value = False):
     b = matrix(a_matrix.cols, 1)
     b.matrixx = [[1] for i in range(a_matrix.cols)]
+    eigen_value = 0
     for i in range(steps):
         prod = matrix_mult(a_matrix, b)
-        norm = normalise_matrix(prod)
+        eigen_value = prod.matrixx[0][0]
+        norm = matrix_by_scalar(prod,1/prod.matrixx[0][0])
         b = norm
+    if value == True :
+        return eigen_value
     return b
+def create_identity_matrix(dimension):
+    Ar = []
+    sub = []
+    for i in range(dimension):
+        for j in range(dimension):
+            if i == j :
+                sub.append(1)
+            else:
+                sub.append(0)
+        Ar.append(sub)
+        sub = []
+    identity_matrix = matrix(dimension,dimension)
+    identity_matrix.matrixx = Ar
+    return identity_matrix
 
+def invert_matrix(a_matrix):
+    if determinant(a_matrix) == 0 :  #check for singularity
+        raise ValueError("Matrix is singular , cannot be inverted")
+    if type(a_matrix) != matrix or a_matrix.rows != a_matrix.cols :
+        raise TypeError("Input must be a square nxn matrix")
+    #initiate inverted matrix and corresponding identity matrix , in the end identity matrix will be the inversion of the input and the inverted_Matrix will be a identity matrix
+    inverted = matrix(a_matrix.rows , a_matrix.rows)
+    inverted.matrixx = a_matrix.matrixx
+    identity_matrix = create_identity_matrix(a_matrix.rows)
+    #scaling each row by the inverse of its diagonal element
+    for fd in range(a_matrix.rows):
+        diag_scaler = 1.0 / a_matrix.matrixx[fd][fd]
+        for j in range(a_matrix.rows):
+            inverted.matrixx[fd][j] *= diag_scaler
+            identity_matrix.matrixx[fd][j] *= diag_scaler
+        # reducing every row by the product of the element in the same col as the diagonal scalar  multiplied by the row of the current diagonal scalar
+        for i in range(0 , fd):
+            current_scaler = inverted.matrixx[i][fd]
+            for k in range(a_matrix.rows):
+                inverted.matrixx[i][k] -= current_scaler*inverted.matrixx[fd][k]
+                identity_matrix.matrixx[i][k] -= current_scaler*identity_matrix.matrixx[fd][k]
+        for i in range(fd+1 , a_matrix.rows ):
+            current_scaler = inverted.matrixx[i][fd]
+            for k in range(a_matrix.rows):
+                inverted.matrixx[i][k] -= current_scaler*inverted.matrixx[fd][k]
+                identity_matrix.matrixx[i][k] -= current_scaler*identity_matrix.matrixx[fd][k]
 
+    return identity_matrix
 
+def check_for_indeterminate(a_matrix,b_matrix):
+    for i in range(a_matrix.rows):
+        for j in range(a_matrix.cols):
+            a_matrix.matrixx[i][j] *= 1/b_matrix.matrixx[i][0]
+    for i in range(a_matrix.rows):
+        for j in range(0,i):
+            if a_matrix.matrixx[i] == a_matrix.matrixx[j] :
+                raise ArithmeticError("Indeterminate system")
+        for j in range(i+1,a_matrix.rows):
+            if a_matrix.matrixx[i] == a_matrix.matrixx[j]:
+                raise ArithmeticError("Indeterminate system")
+    for i in range(a_matrix.rows):
+         for j in range(a_matrix.cols):
+            a_matrix.matrixx[i][j] *=  b_matrix.matrixx[i][0]
 
+    return 1
+def check_for_inconsistency(a_matrix,b_matrix):
+    for i in range(a_matrix.rows):
+        for j in range(0,i):
+            if nabs(a_matrix.matrixx[j][0]/a_matrix.matrixx[i][0] - b_matrix.matrixx[j][0] / b_matrix.matrixx[i][0] ) > .00001:
+                raise ArithmeticError("Inconsistent system")
+        for j in range(i+1 , a_matrix.rows):
+            if nabs(a_matrix.matrixx[j][0] / a_matrix.matrixx[i][0] - b_matrix.matrixx[j][0] / b_matrix.matrixx[i][0]) > .00001:
+                print(nabs(a_matrix.matrixx[j][0] / a_matrix.matrixx[i][0] - b_matrix.matrixx[j][0] / b_matrix.matrixx[i][0]) )
+                raise ArithmeticError("Inconsistent system")
+    return 1
+def solve_system_using_inverse(a_matrix , b , indeterminate_check = False):
+    ar = []
+    b_matrix = matrix(a_matrix.rows,1)
+    for i in range(len(b)):
+        ar.append(b[i])
+        b_matrix.matrixx.append(ar)
+        ar = []
+    if indeterminate_check == True:
+          #  check_for_inconsistency(a_matrix,b_matrix) patch it up here
+            check_for_indeterminate(a_matrix,b_matrix)
+    if type(a_matrix) != matrix or a_matrix.rows != a_matrix.cols or len(b) != a_matrix.rows:
+        raise TypeError("Input must be given as a nxn matrix , which represents the coefficients of the linear system")
+    if determinant(a_matrix) == 0 :
+        raise ArithmeticError("Matrix is singular , not invertible")
+    x_matrix = matrix_mult(invert_matrix(a_matrix),b_matrix)
+    return x_matrix
 
 def _main():
     if __name__ == "__main__":
