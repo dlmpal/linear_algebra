@@ -574,8 +574,20 @@ def create_identity_matrix(dimension):
     identity_matrix = matrix(dimension,dimension)
     identity_matrix.matrixx = Ar
     return identity_matrix
-
-def invert_matrix(a_matrix):
+def copy_matrix(a_matrix):
+    if type(a_matrix) != matrix :
+        raise TypeError("Input must be a matrix object")
+    copy  = matrix(a_matrix.rows , a_matrix.cols)
+    copy.matrixx = []
+    sub = []
+    for i in range(a_matrix.rows):
+        for j in range(a_matrix.cols):
+            sub.append(a_matrix.matrixx[i][j])
+        copy.matrixx.append(sub)
+        sub = []
+    return copy
+def invert_matrix(a__matrix):
+    a_matrix = copy_matrix(a__matrix)
     if determinant(a_matrix) == 0 :  #check for singularity
         raise ValueError("Matrix is singular , cannot be inverted")
     if type(a_matrix) != matrix or a_matrix.rows != a_matrix.cols :
@@ -601,8 +613,8 @@ def invert_matrix(a_matrix):
             for k in range(a_matrix.rows):
                 inverted.matrixx[i][k] -= current_scaler*inverted.matrixx[fd][k]
                 identity_matrix.matrixx[i][k] -= current_scaler*identity_matrix.matrixx[fd][k]
-
     return identity_matrix
+
 
 def check_for_indeterminate(a_matrix,b_matrix):
     for i in range(a_matrix.rows):
@@ -618,8 +630,9 @@ def check_for_indeterminate(a_matrix,b_matrix):
     for i in range(a_matrix.rows):
          for j in range(a_matrix.cols):
             a_matrix.matrixx[i][j] *=  b_matrix.matrixx[i][0]
-
     return 1
+def adjucate(a_matrix):
+    return matrix_by_scalar(a_matrix , determinant(a_matrix))
 def check_for_inconsistency(a_matrix,b_matrix):
     for i in range(a_matrix.rows):
         for j in range(0,i):
@@ -627,10 +640,9 @@ def check_for_inconsistency(a_matrix,b_matrix):
                 raise ArithmeticError("Inconsistent system")
         for j in range(i+1 , a_matrix.rows):
             if nabs(a_matrix.matrixx[j][0] / a_matrix.matrixx[i][0] - b_matrix.matrixx[j][0] / b_matrix.matrixx[i][0]) > .00001:
-                print(nabs(a_matrix.matrixx[j][0] / a_matrix.matrixx[i][0] - b_matrix.matrixx[j][0] / b_matrix.matrixx[i][0]) )
                 raise ArithmeticError("Inconsistent system")
     return 1
-def solve_system_using_inverse(a_matrix , b , indeterminate_check = False):
+def solve_system_using_inverse(a_matrix , b , indeterminate_check = False ):
     ar = []
     b_matrix = matrix(a_matrix.rows,1)
     for i in range(len(b)):
@@ -646,6 +658,29 @@ def solve_system_using_inverse(a_matrix , b , indeterminate_check = False):
         raise ArithmeticError("Matrix is singular , not invertible")
     x_matrix = matrix_mult(invert_matrix(a_matrix),b_matrix)
     return x_matrix
+
+def round_elements(a_matrix,tolerance = 3 ):
+    for i in range(a_matrix.rows):
+        for j in range(a_matrix.cols):
+            if a_matrix.matrixx[i][j] >= 0:
+                sign = 1
+            if a_matrix.matrixx[i][j] < 0:
+                sign = - 1
+            if nabs(a_matrix.matrixx[i][j]) < .000001:
+                a_matrix.matrixx[i][j] = 0
+            if ((a_matrix.matrixx[i][j] % 1) * (10 ** (tolerance))) % 1 > .5:
+
+                a_matrix.matrixx[i][j] = sign * (a_matrix.matrixx[i][j] // 1 + (
+                            ((((a_matrix.matrixx[i][j] % 1) * (10 ** tolerance)) // 1) + 1) / (10 ** tolerance)))
+            else:
+                a_matrix.matrixx[i][j] *= 10 ** tolerance
+                a_matrix.matrixx[i][j] = a_matrix.matrixx[i][j] // 1
+                a_matrix.matrixx[i][j] /= 10 ** tolerance
+               # a_matrix.matrixx[i][j] = sign
+    return a_matrix
+
+                # 2.3451-> .3451 ->345.1 ->
+                # .3451 -> 345 + 1
 
 def _main():
     if __name__ == "__main__":
