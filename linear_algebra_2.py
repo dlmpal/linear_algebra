@@ -22,73 +22,30 @@ class vector():
         T = [[i] for i in range(length)]
 
 
-def factorial(n):
-    if n == 0:
-        return 1
-    return n * factorial(n - 1)
 
 
-def arctangent(x, steps=22, degrees=False):
-    # input must be of numerical form
-    arctan = 0
-    for n in range(steps):
-        arctan += (2 ** (2 * n)) * (factorial(n) ** 2) * (x ** (2 * n + 1)) / (
-                (factorial(2 * n + 1)) * (1 + x ** 2) ** (n + 1))
-    if degrees == True:
-        return 57.2957795 * arctan
-    else:
-        return arctan
-
-
-def arcsin(x, degrees=False):
-    if x > 1: raise ValueError("Input must be between -1 and 1")
-    arcsine = 2 * arctangent(x / (1 + (1 - x ** 2) ** (.5)), degrees)
-    return arcsine
-
-
-def arccos(x, degrees=False):
-    if x > 1: raise ValueError("Input must be between -1 and 1")
-    arccosine = 3.14159265359 / 2 - arcsin(x, degrees)
-    return arccosine
-
-
-def sin(x, steps=22):
-    sum = 0
-    for n in range(steps):
-        sum += (-1 ** n) * (x ** (2 * n + 1)) / factorial(2 * n + 1)
-    return sum
-
-
-def cos(x, steps=22):
-    sum = 0
-    for n in range(steps):
-        sum += (-1 ** n) * (x ** (2 * n)) / (factorial(2 * n))
-    return sum
-
-
-def tan(x, steps=22):
-    if cos(x, steps) < 10e-12: raise ValueError("Tangent of multiples of pi/2 is not defiend")
-    tangent = sin(x, steps) / cos(x, steps)
-    return tangent
-
+from analysis import sin , cos , arccos , arcsin , arctangent , tan , factorial
 
 class complex_num():
-    def __init__(self, a_vector):
-        self.a_vector = a_vector
+    def __init__(self, comps,get_angle = 0 ):
+        if type(comps) == vector :
+            self.a_vector = comps
+        elif type(comps) == list :
+            self.comps = comps
+            self.a_vector = vector(comps)
         if type(self.a_vector) != vector or self.a_vector.Length != 2:
-            raise TypeError(
-                "Input must be a 2d vector , where the first element is the real part and the second the imaginary")
-        self.real = a_vector.array[0]
-        self.im = a_vector.array[1]
-        self.mag = ((self.a_vector.array[1]) ** 2 + (self.a_vector.array[0]) ** 2) ** (.5)
-        self.inv = self.a_vector.array[1] / self.a_vector.array[0]
-        self.angle = arctangent(self.inv, degrees=True)
-
-    def get_angle(self, show=False):
-        self.inv = self.a_vector.array[1] / self.a_vector.array[0]
-        self.angle = arctangent(self.inv, degrees=True)
-        if show == True: print("angle in degrees is ", self.angle)
-        return self.angle
+             raise TypeError(
+                 "Input must be a 2d vector , where the first element is the real part and the second the imaginary")
+        self.real = self.a_vector.array[0]
+        self.im = self.a_vector.array[1]
+        if get_angle == 1 :
+             self.mag = ((self.a_vector.array[1]) ** 2 + (self.a_vector.array[0]) ** 2) ** (.5)
+             if self.real == 0 :
+                  self.inv = None
+                  self.angle = 90
+             else:
+                  self.inv = self.a_vector.array[1] / self.a_vector.array[0]
+                  self.angle = arctangent(self.inv, degrees=True)
 
     def get_real(self):
         return self.real
@@ -113,7 +70,6 @@ def add_complex(c1, c2):
     addition_vector = vector([c1.real + c2.real, c1.im + c2.im])
     c3 = complex_num(addition_vector)
     return c3
-
 
 def mult_complex(c1, c2):
     if type(c1) != complex_num or type(c2) != complex_num:
@@ -142,6 +98,24 @@ def divide_complex(c1, c2):
     new_angle = ag1 / ag2
 
     return to_cartesian(new_magnitude, new_angle)
+
+import math
+def exp_complex(theta):
+    """
+    Complex exponent function :
+    exp(i*theta) = cos(theta) + i*sin(theta)
+    :param theta: theta
+    :return: complex number type -> vector([cos(theta),sin(theta)])
+    """
+    return complex_num(vector([math.cos(theta),math.sin(theta)]))
+
+def raise_complex(c_num,power):
+    if type(c_num) != complex_num or power < 0 :
+        raise ValueError("Input must be a complex number , power must be positive")
+    current = c_num
+    for i in range(power-1):
+        current = mult_complex(current , c_num)
+    return current
 
 
 # input for dot product must be of vector class // all inputs must be dimensionally EQUAL!!!
@@ -205,7 +179,6 @@ class matrix():
         self.matrixt = [list() for i in range(cols)]
         if type(self.rows) != int or type(self.cols) != int:
             raise TypeError("Invalid dimensions")
-
     def construct(self, *argv):
         testfunc(*argv)
         count = 0
@@ -222,6 +195,19 @@ class matrix():
             for i in range(vec.Length):
                 self.matrixt[i].append(vec.array[i])
             count += 1
+
+    def complex_print(self):
+        for i in range(self.rows):
+            line = []
+            for j in range(self.cols):
+                 real = self.matrixx[i][j].real
+                 im = self.matrixx[i][j].im
+                 c_num = str(real)+" + "+"j"+str(im)
+                 line.append(c_num)
+            print(line)
+            line = []
+
+
 
     def summ(self, row_start, row_end, col_start, col_end):
         total = 0
@@ -251,6 +237,8 @@ class matrix():
 
     def printfT(self):
         print(self.matrixt)
+    def shape(self):
+        print(self.rows,"x",self.cols)
 
     def zeroes(self):
         sub_ar = [0 for i in range(self.cols)]
@@ -278,7 +266,7 @@ def matrix_mult(matrix1, matrix2):
     if type(matrix1) != matrix or type(matrix2) != matrix:
         raise TypeError("Both inputs must be matrices")
     if matrix1.cols != matrix2.rows:
-        raise ValueError("Incopatible matrices")
+        raise ValueError("Incopatible matrices:",matrix1.rows,"x",matrix1.cols," * " , matrix2.rows,"x",matrix2.cols)
     sub = []
     ar3 = []
     row_sum = 0
@@ -294,7 +282,26 @@ def matrix_mult(matrix1, matrix2):
     matrix3.matrixx = ar3
 
     return matrix3
+def matrix_mult_complex(matrix1,matrix2):
+    if type(matrix1) != matrix or type(matrix2) != matrix:
+        raise TypeError("Both inputs must be matrices")
+    if matrix1.cols != matrix2.rows:
+        raise ValueError("Incopatible matrices:",matrix1.rows,"x",matrix1.cols," * " , matrix2.rows,"x",matrix2.cols)
+    sub = []
+    ar3 = []
+    row_sum = complex_num(vector([0,0]))
+    for i in range(matrix1.rows):
+        for j in range(matrix2.cols):
+            for k in range(matrix2.rows):
+                row_sum =  add_complex(row_sum,mult_complex(matrix1.matrixx[i][k] , matrix2.matrixx[k][j]))
 
+            sub.append(row_sum)
+            row_sum = complex_num(vector([0,0]))
+        ar3.append(sub)
+        sub = []
+    matrix3 = matrix(matrix1.rows, matrix2.cols)
+    matrix3.matrixx = ar3
+    return matrix3
 
 def matrix_add(matrix1, matrix2):
     array1 = matrix1.matrixx
@@ -309,6 +316,20 @@ def matrix_add(matrix1, matrix2):
         for i in range(matrix1.cols):
             array3 = []
             array3.append(array1[j][i] + array2[j][i])
+        matrix.matrixx.append(array3)
+    return matrix3
+def matrix_add_complex(matrix1,matrix2):
+    array1 = matrix1.matrixx
+    array2 = matrix2.matrixx
+    if type(matrix1) != matrix or type(matrix2) != matrix:
+        raise TypeError("Inputs must be matrices")
+    if matrix2.cols != matrix1.cols or matrix1.rows != matrix2.rows:
+        raise ValueError("Dimensions not combatible")
+    matrix3 = matrix(matrix1.rows, matrix1.cols)
+    for j in range(matrix1.rows):
+        for i in range(matrix1.cols):
+            array3 = []
+            array3.append(add_complex(array1[j][i], array2[j][i]))
         matrix.matrixx.append(array3)
     return matrix3
 
@@ -392,63 +413,6 @@ def nabs(num):
         return -num
     else:
         return num
-
-
-class real_func:
-    def __init__(self, x):
-        self.variable = x
-
-
-def gauss(A_matrix, b_vector, print_rref=False, show=False):
-    # check for input compatability
-    if type(A_matrix) != matrix or A_matrix.rows != A_matrix.cols:
-        raise TypeError("Input must be n x n matrix")
-    if type(b_vector) != vector or b_vector.Length != A_matrix.rows:
-        raise TypeError("Constant vector must be a vector of length equal to the size of the matrix")
-    a_matrix = A_matrix.matrixx  # obtain array like object from matrix type object
-    b = b_vector.array  # obtain array like object from vector type object
-    n = A_matrix.rows
-    # gaussian elimination
-    for k in range(n - 1):
-        # row swapping if necessary
-        # =============================================================================
-        #         if nabs(a_matrix[k][k]) < (10**-12):
-        #             for i in range(k+1,n):
-        #                 if nabs(a_matrix[i][k]) > nabs(a_matrix[k][k]):
-        #                     a_matrix[k][i] , a_matrix[i][k] = a_matrix[i][k] , a_matrix[k][i]
-        #                     b[i] , b[k] = b[k] , b[i]
-        # =============================================================================
-        # actual elimination
-        for i in range(k + 1, n):
-            if a_matrix[i][k] == 0: continue
-            factor = a_matrix[k][k] / a_matrix[i][k]
-            for j in range(k, n):
-                a_matrix[i][j] = a_matrix[k][j] - a_matrix[i][j] * factor
-            b[i] = b[k] - b[i] * factor
-
-    x = [0 for i in range(n)]  # initializing solution vector
-    if print_rref == True:
-        print(a_matrix)  # prints reduced row echelon form of parameter matrix
-        print(b)  #################################################
-
-    # check for existence of solutions
-    for i in range(n - 1, 0, -1):
-        if a_matrix[i][n - 1] == 0 and b[i] != 0: print("no solutions exist"); return (1)
-
-    # backward substition to compute solutions
-    x[n - 1] = b[n - 1] / a_matrix[n - 1][n - 1]
-    for i in range(n - 2, -1, -1):
-        sum_ax = 0
-        for j in range(i + 1, n):
-            sum_ax += a_matrix[i][j] * x[j]
-        x[i] = (b[i] - sum_ax) / a_matrix[i][i]
-        # print(x[i])
-
-    if show == True:
-        print("the solution of the linear system is\n", x)
-
-    return x
-
 
 def raise_matrix(a_matrix, power):
     if type(a_matrix) != matrix or a_matrix.cols != a_matrix.rows:
@@ -632,7 +596,8 @@ def check_for_indeterminate(a_matrix,b_matrix):
             a_matrix.matrixx[i][j] *=  b_matrix.matrixx[i][0]
     return 1
 def adjucate(a_matrix):
-    return matrix_by_scalar(a_matrix , determinant(a_matrix))
+    copy = copy_matrix(a_matrix)
+    return matrix_by_scalar(copy , determinant(copy))
 def check_for_inconsistency(a_matrix,b_matrix):
     for i in range(a_matrix.rows):
         for j in range(0,i):
@@ -643,6 +608,13 @@ def check_for_inconsistency(a_matrix,b_matrix):
                 raise ArithmeticError("Inconsistent system")
     return 1
 def solve_system_using_inverse(a_matrix , b , indeterminate_check = False ):
+    """
+    WARNING: should only be used for a system with non-singular a_matrix
+    :param a_matrix:
+    :param b:
+    :param indeterminate_check:
+    :return: the solutions of the system in matrix form
+    """
     ar = []
     b_matrix = matrix(a_matrix.rows,1)
     for i in range(len(b)):
@@ -658,29 +630,94 @@ def solve_system_using_inverse(a_matrix , b , indeterminate_check = False ):
         raise ArithmeticError("Matrix is singular , not invertible")
     x_matrix = matrix_mult(invert_matrix(a_matrix),b_matrix)
     return x_matrix
+def solve_system(a_matrix: object, b_matrix: object) -> object:
+    """
+     Finds the solutions of a linear system. WARNING : b_matrix.shape -> nx1 !!!
+    :param a_matrix:
+    :param b_matrix:
+    :return: the solutons of the system in matrix form
+    """
+    if type(a_matrix) != matrix or a_matrix.rows != a_matrix.cols or b_matrix.rows != a_matrix.rows:
+        raise TypeError("Input must be given as a nxn matrix and a 1xn, of which the first represents the coefficients of the linear system , while the second the constant terms of the system")
+    #check_for_indeterminate(a_matrix,b_matrix)
+    AM = copy_matrix(a_matrix)
+    BM = copy_matrix(b_matrix)
+    n = AM.rows
+    for fd in range(n):
+        scaler = 1/AM.matrixx[fd][fd]
+        for j in range(n):
+            AM.matrixx[fd][j] *= scaler #scale each row by the inverse of each diagonal element
+        BM.matrixx[fd][0] *= scaler
+        for i in range(0,fd):
+            crScaler = AM.matrixx[i][fd]  # cr stands for "current row"/ # reducing every row by the product of the element in the same col as the diagonal scalar  multiplied by the row of the current diagonal scalar
+            for k in range(n):  # cr - crScaler*fdRow.
+                AM.matrixx[i][k] = AM.matrixx[i][k] - crScaler * AM.matrixx[fd][k]
+            BM.matrixx[i][0] = BM.matrixx[i][0] - crScaler * BM.matrixx[fd][0]
+        for i in range(fd+1 , n):
+            crScaler = AM.matrixx[i][fd]  # same as before , now for rows after the row of the current diagonal element
+            for k in range(n):  # cr - crScaler*fdRow.
+                AM.matrixx[i][k] = AM.matrixx[i][k] - crScaler * AM.matrixx[fd][k]
+            BM.matrixx[i][0] = BM.matrixx[i][0] - crScaler * BM.matrixx[fd][0]
+    #by completing the iterations , the AM matrix , namely the morphed copy of the coefficient matrix
+    # is now an identity matrix, while the morphed copy of the b matrix is now the solutions matrix
+    return BM
 
 def round_elements(a_matrix,tolerance = 3 ):
     for i in range(a_matrix.rows):
         for j in range(a_matrix.cols):
-            if a_matrix.matrixx[i][j] >= 0:
-                sign = 1
+            sign = 1
             if a_matrix.matrixx[i][j] < 0:
                 sign = - 1
             if nabs(a_matrix.matrixx[i][j]) < .000001:
                 a_matrix.matrixx[i][j] = 0
-            if ((a_matrix.matrixx[i][j] % 1) * (10 ** (tolerance))) % 1 > .5:
+            if ((nabs(a_matrix.matrixx[i][j]) % 1) * (10 ** (tolerance))) % 1 > .5:
 
-                a_matrix.matrixx[i][j] = sign * (a_matrix.matrixx[i][j] // 1 + (
-                            ((((a_matrix.matrixx[i][j] % 1) * (10 ** tolerance)) // 1) + 1) / (10 ** tolerance)))
+                a_matrix.matrixx[i][j] = sign * (nabs(a_matrix.matrixx[i][j]) // 1 + (
+                            (((nabs((a_matrix.matrixx[i][j]) % 1) * (10 ** tolerance)) // 1) + 1) / (10 ** tolerance)))
             else:
-                a_matrix.matrixx[i][j] *= 10 ** tolerance
-                a_matrix.matrixx[i][j] = a_matrix.matrixx[i][j] // 1
-                a_matrix.matrixx[i][j] /= 10 ** tolerance
-               # a_matrix.matrixx[i][j] = sign
+                a_matrix.matrixx[i][j] = nabs(a_matrix.matrixx[i][j])*10 ** tolerance
+                a_matrix.matrixx[i][j] = nabs(a_matrix.matrixx[i][j]) // 1
+                a_matrix.matrixx[i][j] = nabs(a_matrix.matrixx[i][j])/ 10 ** tolerance
+                a_matrix.matrixx[i][j] *=sign
     return a_matrix
 
-                # 2.3451-> .3451 ->345.1 ->
-                # .3451 -> 345 + 1
+
+def round_complex_elements(c_num,tolerance = 3 ):
+
+    c_num.real = round(c_num.real,tolerance) ; c_num.im = round(c_num.im,tolerance)
+    return c_num
+
+def round_complex_matrix_elements(c_matrix , tolerance = 3):
+    for i in range(c_matrix.rows):
+        for j in range(c_matrix.cols):
+            round_complex_elements(c_matrix.matrixx[i][j])
+    return c_matrix
+
+
+
+import math
+def dft(f_array):
+    if type(f_array) != list :
+        raise TypeError("Input must be a nx1 array")
+    f_matrix = matrix( len(f_array) , 1)
+    for i in range(len(f_array)):
+        f_matrix.matrixx.append([complex_num(vector([f_array[i],0]))])
+    n = len(f_array)
+    w = -2*math.pi/n
+    freq_matrix = matrix(n,n)
+    sub = []
+    freq_matrix.matrixx = []
+    for k in range(n):
+        for j in range(n):
+            #print("k,j is : ",k,j,"\n")
+            sub.append(round_complex_elements(exp_complex(w*k*j)))
+        freq_matrix.matrixx.append(sub)
+        sub = []
+    dft_matrix = matrix_mult_complex(freq_matrix,f_matrix)
+    return dft_matrix
+import numpy as np
+
+
 
 def _main():
     if __name__ == "__main__":
